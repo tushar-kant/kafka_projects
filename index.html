@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Real-Time Attendance</title>
+  <style>
+    body { font-family: Arial, sans-serif; }
+    #attendance { margin-top: 20px; }
+    .attendance-entry { margin: 10px 0; padding: 10px; background-color: #f4f4f4; border-radius: 5px; }
+  </style>
+</head>
+<body>
+
+  <h6>Real-Time Attendance Updates</h6>
+  
+  <div id="attendance"></div>
+
+  <script>
+    // WebSocket connection to the server
+    const socket = new WebSocket('ws://localhost:3000');
+    
+    // When the WebSocket connection is established
+    socket.onopen = () => {
+      console.log("Connected to WebSocket server");
+    };
+    
+    // When a message is received via WebSocket
+    socket.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+
+      // Display the attendance data
+      const attendanceDiv = document.getElementById('attendance');
+      const newEntry = document.createElement('div');
+      newEntry.classList.add('attendance-entry');
+      newEntry.innerHTML = `
+        <strong>Student:</strong> ${data.name} <br>
+        <strong>Class:</strong> ${data.class} <br>
+        <strong>Timestamp:</strong> ${data.timestamp}
+      `;
+      attendanceDiv.appendChild(newEntry);
+    };
+    
+    // In case of an error
+    socket.onerror = (error) => {
+      console.error("WebSocket Error: ", error);
+    };
+    
+    // Handle WebSocket closure
+    socket.onclose = () => {
+      console.log("WebSocket connection closed");
+    };
+  </script>
+
+</body>
+</html>

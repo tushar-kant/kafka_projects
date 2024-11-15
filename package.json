@@ -1,0 +1,17 @@
+{
+  "name": "kafka_app",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.21.1",
+    "kafkajs": "^2.2.4",
+    "mongodb": "^6.10.0",
+    "ws": "^8.18.0"
+  }
+}
