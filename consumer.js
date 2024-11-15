@@ -94,10 +94,14 @@
 
 const express = require("express");
 const { connectDB, getDB } = require("./db");
+const cors = require('cors');  // Import the cors package
+
 const { kafka } = require("./client");
 
 const app = express();
 const PORT = 3000;
+app.use(cors());  // This allows all domains to access your API
+
 
 // In-memory list of clients waiting for updates
 let clients = [];

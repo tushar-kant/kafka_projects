@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Attendance Stream</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+    }
+    #attendance {
+      margin-top: 20px;
+      padding: 10px;
+      border: 1px solid #ccc;
+      width: 300px;
+      height: 200px;
+      overflow-y: auto;
+      background-color: #f9f9f9;
+    }
+  </style>
+</head>
+<body>
+  <h1>Attendance Stream</h1>
+  <div id="attendance">
+    <ul id="attendanceList"></ul>
+  </div>
+
+  <script>
+    // Create a new EventSource to listen for the stream
+    const eventSource = new EventSource('http://localhost:3000/attendance/stream');
+
+    // When a new message is received from the server
+    eventSource.onmessage = function(event) {
+      console.log('Received data:', event.data);  // Log the data for debugging
+      try {
+        const data = JSON.parse(event.data);  // Parse the incoming JSON data
+        const list = document.getElementById('attendanceList');
+        
+        // Create a new list item with the data
+        const listItem = document.createElement('li');
+        listItem.textContent = `Name: ${data.name}, Class: ${data.class}, Time: ${new Date(data.timestamp).toLocaleString()}`;
+        list.appendChild(listItem);
+        
+        // Optional: Keep the list scrollable to the most recent data
+        list.scrollTop = list.scrollHeight;
+      } catch (e) {
+        console.error('Error parsing data:', e);  // Log any errors while parsing data
+      }
+    };
+
+    // Handle errors
+    eventSource.onerror = function() {
+      console.error('Error with EventSource');
+      eventSource.close();
+    };
+  </script>
+</body>
+</html>
