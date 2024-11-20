@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kafka Producer</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background-color: #f4f4f4;
+    }
+    .form-container {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+    .form-container h1 {
+      margin-bottom: 20px;
+    }
+    .form-container label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+    .form-container input {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 15px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+    .form-container button {
+      padding: 10px 15px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .form-container button:hover {
+      background-color: #0056b3;
+    }
+    .response-message {
+      margin-top: 15px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <div class="form-container">
+    <h1>Send Attendance</h1>
+    <form id="attendance-form">
+      <label for="studentName">Student Name</label>
+      <input type="text" id="studentName" name="studentName" required />
+
+      <label for="className">Class Name</label>
+      <input type="text" id="className" name="className" required />
+
+      <button type="submit">Send Attendance</button>
+    </form>
+    <div id="response-message" class="response-message"></div>
+  </div>
+
+  <script>
+    document.getElementById("attendance-form").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      
+      const studentName = document.getElementById("studentName").value;
+      const className = document.getElementById("className").value;
+
+      try {
+        const response = await fetch("http://localhost:3001/send-attendance", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ studentName, className }),
+        });
+
+        const data = await response.json();
+
+        const responseMessage = document.getElementById("response-message");
+        if (response.ok) {
+          responseMessage.textContent = data.message;
+          responseMessage.style.color = "green";
+        } else {
+          responseMessage.textContent = data.error || "Failed to send attendance";
+          responseMessage.style.color = "red";
+        }
+      } catch (error) {
+        console.error("Error:", error);
+        document.getElementById("response-message").textContent = "An error occurred";
+      }
+    });
+  </script>
+</body>
+</html>

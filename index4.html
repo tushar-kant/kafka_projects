@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Attendance Stream</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+    }
+    #attendance {
+      margin-top: 20px;
+      padding: 10px;
+      border: 1px solid #ccc;
+      width: 300px;
+      height: 200px;
+      overflow-y: auto;
+      background-color: #f9f9f9;
+    }
+    #chartContainer {
+      margin-top: 20px;
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <!-- Import Chart.js -->
+</head>
+<body>
+  <h1>Attendance Stream</h1>
+  <div id="attendance">
+    <ul id="attendanceList"></ul>
+  </div>
+
+  <div id="chartContainer">
+    <canvas id="attendanceChart"></canvas>
+  </div>
+
+  <script>
+    // Create a new EventSource to listen for the stream
+    const eventSource = new EventSource('http://localhost:3000/attendance/stream');
+
+    // Track attendance data for the chart
+    const chartData = {
+      labels: [], // Names
+      datasets: [{
+        label: 'Entry Time',
+        data: [], // Entry times in a formatted string (e.g., HH:mm:ss)
+        backgroundColor: 'rgba(153, 102, 255, 0.2)',
+        borderColor: 'rgba(153, 102, 255, 1)',
+        borderWidth: 1
+      }]
+    };
+
+    // Initialize the chart
+    const ctx = document.getElementById('attendanceChart').getContext('2d');
+    const attendanceChart = new Chart(ctx, {
+      type: 'bar', // Bar chart
+      data: chartData,
+      options: {
+        responsive: true,
+        scales: {
+          x: {
+            title: {
+              display: true,
+              text: 'Names'
+            }
+          },
+          y: {
+            title: {
+              display: true,
+              text: 'Entry Time'
+            },
+            ticks: {
+              callback: function(value) {
+                return new Date(value).toLocaleTimeString(); // Format time for Y-axis labels
+              }
+            }
+          }
+        }
+      }
+    });
+
+    // When a new message is received from the server
+    eventSource.onmessage = function(event) {
+      console.log('Received data:', event.data); // Log the data for debugging
+      try {
+        const data = JSON.parse(event.data); // Parse the incoming JSON data
+        const list = document.getElementById('attendanceList');
+        
+        // Create a new list item with the data
+        const listItem = document.createElement('li');
+        listItem.textContent = `Name: ${data.name}, Class: ${data.class}, Time: ${new Date(data.timestamp).toLocaleString()}`;
+        list.appendChild(listItem);
+        
+        // Optional: Keep the list scrollable to the most recent data
+        list.scrollTop = list.scrollHeight;
+
+        // Update the chart
+        const nameLabel = data.name;
+        const entryTime = new Date(data.timestamp).getTime(); // Use timestamp for Y-axis
+
+        if (!chartData.labels.includes(nameLabel)) {
+          // Add a new name and entry time
+          chartData.labels.push(nameLabel);
+          chartData.datasets[0].data.push(entryTime);
+        } else {
+          // Update the entry time for the existing name (optional)
+          const index = chartData.labels.indexOf(nameLabel);
+          chartData.datasets[0].data[index] = entryTime;
+        }
+
+        attendanceChart.update(); // Refresh the chart
+
+      } catch (e) {
+        console.error('Error parsing data:', e); // Log any errors while parsing data
+      }
+    };
+
+    // Handle errors
+    eventSource.onerror = function() {
+      console.error('Error with EventSource');
+      eventSource.close();
+    };
+  </script>
+</body>
+</html>

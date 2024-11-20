@@ -13,6 +13,10 @@ async function init() {
         topic: "student-attendance",
         numPartitions: 2, // Partition by class (e.g., partition 0 for Class10, partition 1 for Class12)
       },
+      {
+        topic: "api-data",
+        numPartitions: 2,
+      },
     ],
   });
   console.log("Topic Created Success [student-attendance]");

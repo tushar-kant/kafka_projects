@@ -94,14 +94,12 @@
 
 const express = require("express");
 const { connectDB, getDB } = require("./db");
-const cors = require('cors');  // Import the cors package
-
+const cors = require("cors"); // Import the cors package
 const { kafka } = require("./client");
 
 const app = express();
 const PORT = 3000;
-app.use(cors());  // This allows all domains to access your API
-
+app.use(cors()); // This allows all domains to access your API
 
 // In-memory list of clients waiting for updates
 let clients = [];
@@ -110,10 +108,10 @@ app.use(express.json());
 
 // API to send new data to clients
 app.get("/attendance/stream", (req, res) => {
-  res.setHeader('Content-Type', 'text/event-stream');
-  res.setHeader('Cache-Control', 'no-cache');
-  res.setHeader('Connection', 'keep-alive');
-  
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+
   // Ensure the connection stays open
   res.flushHeaders();
 
@@ -121,16 +119,20 @@ app.get("/attendance/stream", (req, res) => {
   clients.push(res);
 
   // Remove client when the connection closes
-  req.on('close', () => {
+  req.on("close", () => {
     clients = clients.filter(client => client !== res);
   });
 });
 
 // Consume Kafka messages and send to clients
 async function consumeAttendance() {
-  const consumer = kafka.consumer({ groupId: 'attendance-group' });
+  // Initialize Kafka consumer
+  const consumer = kafka.consumer({ groupId: "attendance-group" });
   await consumer.connect();
-  await consumer.subscribe({ topics: ['student-attendance'], fromBeginning: true });
+  await consumer.subscribe({ topics: ["student-attendance"], fromBeginning: true });
+
+  // Connect to MongoDB
+  await connectDB(); // Ensure the MongoDB connection is initialized
 
   await consumer.run({
     eachMessage: async ({ topic, partition, message }) => {
@@ -138,15 +140,35 @@ async function consumeAttendance() {
 
       console.log(`Received: ${name} from ${className} at ${timestamp}`);
 
+      // Store the consumed message in MongoDB
+      try {
+        const db = getDB();
+        const attendanceCollection = db.collection("attendanceconsumer"); // Replace with your collection name
+
+        const result = await attendanceCollection.insertOne({
+          name,
+          class: className,
+          timestamp,
+          topic,
+          partition,
+        });
+
+        console.log("Stored in MongoDB:", result.insertedId);
+      } catch (error) {
+        console.error("Error storing message in MongoDB:", error);
+      }
+
       // Send the new attendance data to all connected clients
       clients.forEach(client => {
         client.write(`data: ${JSON.stringify({ name, class: className, timestamp })}\n\n`);
       });
-    }
+    },
   });
 }
 
-consumeAttendance();
+consumeAttendance().catch(error => {
+  console.error("Error consuming Kafka messages:", error);
+});
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
